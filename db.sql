@@ -10,4 +10,3 @@ CREATE TABLE IF NOT EXISTS users (
 INSERT INTO users (name, email) VALUES
 ('Alice', 'alice@example.com'),
 ('Bob', 'bob@example.com'),
-('Sam', 'sam@example.com')
