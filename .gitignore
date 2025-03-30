@@ -1,3 +1,5 @@
 PlagiarismDetection.class
 results/
 submissions/
+*.class
+config.properties
