@@ -9,6 +9,7 @@ plugins {
     // Apply the application plugin to add support for building a CLI application in Java.
     id 'application'
     id 'java'
+    id 'org.openjfx.javafxplugin' version '0.1.0'
 }
 
 jar {
@@ -18,8 +19,12 @@ jar {
 }
 
 repositories {
-    // Use Maven Central for resolving dependencies.
     mavenCentral()
+}
+
+javafx {
+    version = "17.0.6"
+    modules = [ 'javafx.base', 'javafx.graphics', 'javafx.controls', 'javafx.fxml' ]
 }
 
 dependencies {
@@ -28,10 +33,15 @@ dependencies {
 
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
-    // This dependency is used by the application.
+    // These dependency is used by the application.
     implementation libs.guava
     implementation 'com.mysql:mysql-connector-j:9.2.0'
-
+    implementation 'org.openjfx:javafx-base:17.0.6'
+    implementation 'org.openjfx:javafx-graphics:17.0.6'
+    implementation 'org.openjfx:javafx-controls:17.0.6'
+    implementation 'org.openjfx:javafx-fxml:17.0.6'
+    implementation 'de.jplag:jplag:4.2.0'
+	
 }
 
 // Apply a specific Java toolchain to ease working on different environments.
