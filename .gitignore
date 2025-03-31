@@ -1,3 +1,7 @@
+PlagiarismDetection.class
+results/
+submissions/
+*.class
 # Ignore Gradle project-specific cache directory
 .gradle
 
@@ -5,6 +9,7 @@
 build/
 
 config.properties
+
 *.class
 .vscode/
 bin/
