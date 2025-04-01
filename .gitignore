@@ -10,3 +10,5 @@ build/
 
 .vscode/
 bin/
+
+app/libs/*.jar
