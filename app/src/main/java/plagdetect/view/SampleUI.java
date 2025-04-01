@@ -10,6 +10,7 @@ import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.scene.layout.VBox;
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import plagdetect.controller.FileController;
 
 import java.io.File;
@@ -32,6 +33,7 @@ public class SampleUI extends Application {
         VBox vbox = new VBox();
         vbox.setSpacing(5);
         vbox.setPadding(new Insets(10));
+        vbox.setAlignment(Pos.CENTER);
         vbox.getChildren().addAll(uploadButton, viewFilesButton);
 
         Scene scene = new Scene(vbox, 400, 150); // Adjust height for the buttons
@@ -59,11 +61,12 @@ public class SampleUI extends Application {
         try {
             List<String[]> files = fileController.getUploadedFiles();
             StringBuilder fileList = new StringBuilder("Uploaded Files:\n");
+            int index = 1; // Start indexing from 1
             for (String[] file : files) {
-                fileList.append("File Name: ").append(file[0])
-                        .append(", File Path: ").append(file[1]).append("\n");
+                fileList.append(index++).append(". File Name: ").append(file[0])
+                        .append("\n   File Path: ").append(file[1]).append("\n");
             }
-
+    
             // Display the list in an alert dialog
             Alert alert = new Alert(AlertType.INFORMATION);
             alert.setTitle("Uploaded Files");
@@ -71,10 +74,10 @@ public class SampleUI extends Application {
             TextArea textArea = new TextArea(fileList.toString());
             textArea.setEditable(false);
             textArea.setWrapText(true);
-            textArea.setPrefSize(400, 300);
+            textArea.setPrefSize(600, 300);
             alert.getDialogPane().setContent(textArea);
             alert.showAndWait();
-
+    
         } catch (Exception e) {
             showAlert("Error", "Error retrieving uploaded files: " + e.getMessage());
         }
