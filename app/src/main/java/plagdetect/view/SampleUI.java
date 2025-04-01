@@ -77,7 +77,6 @@ public class SampleUI extends Application {
             textArea.setPrefSize(600, 300);
             alert.getDialogPane().setContent(textArea);
             alert.showAndWait();
-    
         } catch (Exception e) {
             showAlert("Error", "Error retrieving uploaded files: " + e.getMessage());
         }
