@@ -36,11 +36,29 @@ dependencies {
     // These dependency is used by the application.
     implementation libs.guava
     implementation 'com.mysql:mysql-connector-j:9.2.0'
+
     implementation 'org.openjfx:javafx-base:17.0.6'
     implementation 'org.openjfx:javafx-graphics:17.0.6'
     implementation 'org.openjfx:javafx-controls:17.0.6'
     implementation 'org.openjfx:javafx-fxml:17.0.6'
-    implementation 'de.jplag:jplag:4.2.0'
+
+    implementation 'org.slf4j:slf4j-api:2.0.6'
+    implementation 'com.ibm.icu:icu4j:76.1'
+    implementation 'com.ibm.icu:icu4j-charset:76.1'
+    implementation 'org.jgrapht:jgrapht-core:1.5.2'
+    implementation 'org.apfloat:apfloat:1.10.1'
+    implementation 'org.jheaps:jheaps:0.14'
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.18.2'
+    implementation 'com.fasterxml.jackson.core:jackson-annotations:2.18.2'
+    implementation 'com.fasterxml.jackson.core:jackson-core:2.18.2'
+    implementation 'org.apache.commons:commons-math3:3.6.1'
+
+    implementation 'de.jplag:jplag:6.0.0'
+    implementation 'de.jplag:language-api:6.0.0'
+    implementation 'de.jplag:languages:6.0.0'
+    implementation 'de.jplag:java:6.0.0'
+
+    compileOnly 'org.kohsuke.metainf-services:metainf-services:1.11'
 	
 }
 

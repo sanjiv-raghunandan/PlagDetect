@@ -1,3 +1,5 @@
+package plagdetect.controller;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -9,31 +11,21 @@ import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.io.File;
 import java.io.IOException;
-// package plagdetect.controller;
 
-// import java.util.ArrayList;
-// import java.util.List;
-// import java.util.stream.Collectors;
-// import java.nio.file.Files;
-// import java.nio.file.Paths;
-// import java.nio.file.Path;
-// import java.io.File;
-// import java.io.IOException;
+import de.jplag.JPlag;
+public class PlagiarismDetection {
+    private static final String SUB_DIR = "submissions";
+    private static final String RES_DIR = "results";
 
-
-// public class PlagiarismDetection{
-//     private static final String SUB_DIR = "submissions";
-//     private static final String RES_DIR = "results";
-
-//     public static void main(String[] args){
-//         try{
-//             Files.createDirectories(Paths.get(RES_DIR)); //create results directory
-//             List<File> submissions = getSubmissions();//get all files in submissions directory
+    public static void main(String[] args) {
+        try {
+            Files.createDirectories(Paths.get(RES_DIR)); // create results directory
+            List<File> submissions = getSubmissions(); // get all files in submissions directory
             
-//             if (submissions.isEmpty()) {
-//                 System.out.println("No submissions found.");
-//                 return;
-//             }
+            if (submissions.isEmpty()) {
+                System.out.println("No submissions found.");
+                return;
+            }
             
             System.out.println("Found " + submissions.size() + " submissions.");
 
@@ -41,28 +33,21 @@ import java.io.IOException;
             
             printMetadata(fileMetadata);
             
-            sendToDatabase(fileMetadata);            
+            sendToDatabase(fileMetadata);
         }
-        catch(Exception e){
-            System.err.println("Error:"+e.getMessage());
+        catch(Exception e) {
+            System.err.println("Error: " + e.getMessage());
             e.printStackTrace();
         }
     }
-//             System.out.println("Found " + submissions.size() + " submissions.");
-//         }
-//         catch(Exception e){
-//             System.err.println("Error:"+e.getMessage());
-//             e.printStackTrace();
-//         }
-//     }
 
-//     public static List<File> getSubmissions() throws IOException {
-//         Path subPath = Paths.get(SUB_DIR);
+    public static List<File> getSubmissions() throws IOException {
+        Path subPath = Paths.get(SUB_DIR);
 
-//         if (!Files.exists(subPath)){
-//             System.err.println("Submissions directory does not exist");
-//             return new ArrayList<>();
-//         }
+        if (!Files.exists(subPath)) {
+            System.err.println("Submissions directory does not exist");
+            return new ArrayList<>();
+        }
 
         return Files.list(subPath)
             .filter(Files::isRegularFile)
@@ -102,6 +87,7 @@ import java.io.IOException;
         
         return metadataList;
     }
+    
     private static void printMetadata(List<Map<String, Object>> metadataList) {
         System.out.println("\nFile Metadata Summary:");
         System.out.println("=====================");
@@ -117,18 +103,14 @@ import java.io.IOException;
         }
     }
     
-     // Send metadata to the database
+    // Send metadata to the database
     private static void sendToDatabase(List<Map<String, Object>> metadataList) {
         // TODO: Implement database connection and storage
         System.out.println("Sending " + metadataList.size() + " records to database...");
-
-        
         System.out.println("Metadata ready for database submission.");
     }
     
-
     // Get file extension from filename
-
     private static String getFileExtension(String fileName) {
         int lastDotIndex = fileName.lastIndexOf('.');
         if (lastDotIndex > 0) {
@@ -137,9 +119,7 @@ import java.io.IOException;
         return "";
     }
     
-
     // Count the number of lines in a string
-
     private static int countLines(String text) {
         if (text.isEmpty()) {
             return 0;
@@ -147,57 +127,3 @@ import java.io.IOException;
         return text.split("\r\n|\r|\n").length;
     }
 }
-// package plagdetect.controller;
-
-// import java.util.ArrayList;
-// import java.util.List;
-// import java.util.stream.Collectors;
-// import java.nio.file.Files;
-// import java.nio.file.Paths;
-// import java.nio.file.Path;
-// import java.io.File;
-// import java.io.IOException;
-
-
-// public class PlagiarismDetection{
-//     private static final String SUB_DIR = "submissions";
-//     private static final String RES_DIR = "results";
-
-//     public static void main(String[] args){
-//         try{
-//             Files.createDirectories(Paths.get(RES_DIR)); //create results directory
-//             List<File> submissions = getSubmissions();//get all files in submissions directory
-            
-//             if (submissions.isEmpty()) {
-//                 System.out.println("No submissions found.");
-//                 return;
-//             }
-            
-//             System.out.println("Found " + submissions.size() + " submissions.");
-//         }
-//         catch(Exception e){
-//             System.err.println("Error:"+e.getMessage());
-//             e.printStackTrace();
-//         }
-//     }
-
-//     public static List<File> getSubmissions() throws IOException {
-//         Path subPath = Paths.get(SUB_DIR);
-
-//         if (!Files.exists(subPath)){
-//             System.err.println("Submissions directory does not exist");
-//             return new ArrayList<>();
-//         }
-
-//         return Files.list(subPath)
-//             .filter(Files::isRegularFile)
-//             .map(Path::toFile)
-//             .collect(Collectors.toList());
-//     }
-// }
-//         return Files.list(subPath)
-//             .filter(Files::isRegularFile)
-//             .map(Path::toFile)
-//             .collect(Collectors.toList());
-//     }
-// }
