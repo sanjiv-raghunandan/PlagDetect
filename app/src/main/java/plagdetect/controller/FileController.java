@@ -1,6 +1,6 @@
 package plagdetect.controller;
 
-import plagdetect.model.UploadedFileModel;
+import plagdetect.model.FileModel;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -13,10 +13,18 @@ public class FileController {
         for (File file : files) {
             fileData.add(new String[]{file.getName(), file.getAbsolutePath()});
         }
-        UploadedFileModel.saveFiles(fileData);
+        FileModel.saveFiles(fileData);
     }
 
     public List<String[]> getUploadedFiles() throws Exception {
-        return UploadedFileModel.getUploadedFiles();
+        return FileModel.getUploadedFiles();
+    }
+
+    public void deleteAllFiles() throws Exception {
+        FileModel.deleteAllFiles();
+    }
+
+    public void deleteFile(String fileName) throws Exception {
+        FileModel.deleteFile(fileName);
     }
 }

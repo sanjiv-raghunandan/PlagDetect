@@ -46,12 +46,12 @@
 package plagdetect;
 
 import javafx.application.Application;
-import plagdetect.view.SampleUI;
+import plagdetect.view.UI;
 
 import de.jplag.JPlag;
 public class App {
     public static void main(String[] args) {
         // Launch JavaFX application
-        Application.launch(SampleUI.class, args);
+        Application.launch(UI.class, args);
     }
 }
