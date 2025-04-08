@@ -10,6 +10,7 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Alert.AlertType;
 import plagdetect.controller.FileController;
+import plagdetect.controller.JPlagDetect;
 
 import java.io.File;
 import java.util.List;
@@ -17,6 +18,7 @@ import java.util.List;
 public class UI extends Application {
 
     private final FileController fileController = new FileController();
+	private final JPlagDetect jPlagDetect = new JPlagDetect(); 
 
     @Override
     public void start(Stage primaryStage) {
@@ -27,12 +29,15 @@ public class UI extends Application {
         // Add View Uploaded Files Button
         Button viewFilesButton = new Button("View Uploaded Files");
         viewFilesButton.setOnAction(e -> viewUploadedFiles());
+		
+		Button plagDetectButton = new Button("Detect Plagarism");
+		plagDetectButton.setOnAction(e -> detectPlag());
 
         VBox vbox = new VBox();
         vbox.setSpacing(5);
         vbox.setPadding(new Insets(10));
         vbox.setAlignment(Pos.CENTER);
-        vbox.getChildren().addAll(uploadButton, viewFilesButton);
+        vbox.getChildren().addAll(uploadButton, viewFilesButton, plagDetectButton);
 
         Scene scene = new Scene(vbox, 400, 150); // Adjust height for the buttons
         primaryStage.setScene(scene);
@@ -148,8 +153,11 @@ public class UI extends Application {
         alert.setContentText(message);
         alert.showAndWait();
     }
-
+	private void detectPlag(){
+		jPlagDetect.handlePlagiarismDetection();
+	}
     public static void main(String[] args) {
         launch(args);
     }
+
 }

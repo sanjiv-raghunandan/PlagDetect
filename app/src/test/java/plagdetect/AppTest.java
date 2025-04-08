@@ -60,7 +60,7 @@ class AppTest {
         try{
             JPlagResult result = JPlag.run(options);
             File resultZip = File.createTempFile("result",".zip" );
-            ReportObjectFactory reportObjectFactory = new ReportObjectFactory(resultZip);
+            ReportObjectFactory reportObjectFactory = new ReportObjectFactory(new File(RES_DIR));
             reportObjectFactory.createAndSaveReport(result);
 
             
