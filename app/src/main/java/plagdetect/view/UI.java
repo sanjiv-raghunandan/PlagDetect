@@ -22,9 +22,9 @@ public class UI extends Application {
 
     @Override
     public void start(Stage primaryStage) {
-        // Add Upload File Button
-        Button uploadButton = new Button("Upload Files");
-        uploadButton.setOnAction(e -> uploadFiles());
+        // Add Download from Drive Button
+        Button downloadDriveButton = new Button("Download Files");
+        downloadDriveButton.setOnAction(e -> downloadFilesFromDrive());
 
         // Add View Uploaded Files Button
         Button viewFilesButton = new Button("View Uploaded Files");
@@ -37,27 +37,12 @@ public class UI extends Application {
         vbox.setSpacing(5);
         vbox.setPadding(new Insets(10));
         vbox.setAlignment(Pos.CENTER);
-        vbox.getChildren().addAll(uploadButton, viewFilesButton, plagDetectButton);
+        vbox.getChildren().addAll(downloadDriveButton, viewFilesButton, plagDetectButton);
 
         Scene scene = new Scene(vbox, 400, 150); // Adjust height for the buttons
         primaryStage.setScene(scene);
         primaryStage.setTitle("File Upload");
         primaryStage.show();
-    }
-
-    private void uploadFiles() {
-        FileChooser fileChooser = new FileChooser();
-        fileChooser.setTitle("Select Files to Upload");
-        List<File> selectedFiles = fileChooser.showOpenMultipleDialog(null);
-
-        if (selectedFiles != null && !selectedFiles.isEmpty()) {
-            try {
-                fileController.uploadFiles(selectedFiles);
-                showAlert("Success", "Files uploaded successfully.");
-            } catch (Exception e) {
-                showAlert("Error", "Error uploading files: " + e.getMessage());
-            }
-        }
     }
 
     private void viewUploadedFiles() {
@@ -145,6 +130,28 @@ public class UI extends Application {
             showAlert("Error", "Error loading file list: " + e.getMessage());
         }
     }
+
+    private void downloadFilesFromDrive() {
+        try {
+            // Step 1: Download files from Google Drive
+            fileController.downloadFilesFromDrive();
+            showAlert("Success", "Files downloaded successfully from Google Drive.");
+    
+            // Step 2: Automatically upload the downloaded files
+            File downloadDir = new File("src/main/resources/submissions");
+            File[] downloadedFiles = downloadDir.listFiles();
+    
+            if (downloadedFiles != null && downloadedFiles.length > 0) {
+                fileController.uploadFiles(List.of(downloadedFiles));
+                showAlert("Success", "Downloaded files uploaded successfully.");
+            } else {
+                showAlert("Info", "No files found to upload after download.");
+            }
+        } catch (Exception e) {
+            showAlert("Error", "Error during download or upload: " + e.getMessage());
+        }
+    }
+
 
     private void showAlert(String title, String message) {
         Alert alert = new Alert(AlertType.INFORMATION);
