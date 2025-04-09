@@ -13,4 +13,4 @@ bin/
 
 app/libs/*.jar
 credentials.json
-app/.settings/
+.settings/
