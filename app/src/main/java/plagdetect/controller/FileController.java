@@ -1,5 +1,6 @@
 package plagdetect.controller;
 
+import plagdetect.model.DriveDownloader;
 import plagdetect.model.FileModel;
 
 import java.io.File;
@@ -26,5 +27,14 @@ public class FileController {
 
     public void deleteFile(String fileName) throws Exception {
         FileModel.deleteFile(fileName);
+    }
+
+    /**
+     * Downloads files from Google Drive using the DriveDownloader class.
+     * @throws Exception if an error occurs during the download process.
+     */
+    public void downloadFilesFromDrive() throws Exception {
+        DriveDownloader driveDownloader = new DriveDownloader();
+        driveDownloader.downloadFilesFromDrive(); // Delegate the download logic to DriveDownloader
     }
 }
