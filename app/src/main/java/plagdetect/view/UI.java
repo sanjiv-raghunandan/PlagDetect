@@ -1,24 +1,27 @@
 package plagdetect.view;
 
-import javafx.application.Application;
-import javafx.scene.Scene;
-import javafx.scene.control.*;
-import javafx.scene.layout.*;
-import javafx.stage.FileChooser;
-import javafx.stage.Stage;
-import javafx.geometry.Insets;
-import javafx.geometry.Pos;
-import javafx.scene.control.Alert.AlertType;
-import plagdetect.controller.FileController;
-import plagdetect.controller.JPlagDetect;
-
 import java.io.File;
 import java.util.List;
+
+import javafx.application.Application;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.Scene;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Alert.AlertType;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
+import javafx.scene.layout.VBox;
+import javafx.stage.FileChooser;
+import javafx.stage.Stage;
+import plagdetect.controller.FileController;
+import plagdetect.controller.JPlagDetect;
 
 public class UI extends Application {
 
     private final FileController fileController = new FileController();
-	private final JPlagDetect jPlagDetect = new JPlagDetect(); 
+    private final JPlagDetect jPlagDetect = new JPlagDetect();
 
     @Override
     public void start(Stage primaryStage) {
@@ -29,17 +32,20 @@ public class UI extends Application {
         // Add View Uploaded Files Button
         Button viewFilesButton = new Button("View Uploaded Files");
         viewFilesButton.setOnAction(e -> viewUploadedFiles());
-		
-		Button plagDetectButton = new Button("Detect Plagarism");
-		plagDetectButton.setOnAction(e -> detectPlag());
+
+        // Add Download from Drive Button
+        Button downloadDriveButton = new Button("Download from Drive");
+        downloadDriveButton.setOnAction(e -> downloadFilesFromDrive());
 
         VBox vbox = new VBox();
         vbox.setSpacing(5);
         vbox.setPadding(new Insets(10));
         vbox.setAlignment(Pos.CENTER);
-        vbox.getChildren().addAll(uploadButton, viewFilesButton, plagDetectButton);
 
-        Scene scene = new Scene(vbox, 400, 150); // Adjust height for the buttons
+        // Add buttons to the VBox layout
+        vbox.getChildren().addAll(uploadButton, viewFilesButton, downloadDriveButton);
+
+        Scene scene = new Scene(vbox, 400, 200); // Adjust height for the buttons
         primaryStage.setScene(scene);
         primaryStage.setTitle("File Upload");
         primaryStage.show();
@@ -106,8 +112,9 @@ public class UI extends Application {
 
     private void loadFileList(VBox fileListLayout) {
         try {
+            // Fetch the list of uploaded files from the file model
             List<String[]> files = fileController.getUploadedFiles();
-            fileListLayout.getChildren().removeIf(node -> node instanceof VBox); // Clear existing file entries
+            fileListLayout.getChildren().clear(); // Clear existing file entries
 
             int index = 1;
             for (String[] file : files) {
@@ -146,18 +153,20 @@ public class UI extends Application {
         }
     }
 
+    private void downloadFilesFromDrive() {
+        try {
+            fileController.downloadFilesFromDrive();
+            showAlert("Success", "Files downloaded successfully from Google Drive.");
+        } catch (Exception e) {
+            showAlert("Error", "Error downloading files: " + e.getMessage());
+        }
+    }
+
     private void showAlert(String title, String message) {
-        Alert alert = new Alert(AlertType.INFORMATION);
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle(title);
         alert.setHeaderText(null);
         alert.setContentText(message);
         alert.showAndWait();
     }
-	private void detectPlag(){
-		jPlagDetect.handlePlagiarismDetection();
-	}
-    public static void main(String[] args) {
-        launch(args);
-    }
-
 }

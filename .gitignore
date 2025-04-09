@@ -12,3 +12,5 @@ build/
 bin/
 
 app/libs/*.jar
+credentials.json
+.settings/
