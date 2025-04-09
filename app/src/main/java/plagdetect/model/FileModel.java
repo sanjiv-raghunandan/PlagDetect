@@ -29,17 +29,36 @@ public class FileModel {
     }
 
     public static void saveFiles(List<String[]> files) throws Exception {
-        try (Connection conn = getConnection();
-             PreparedStatement stmt = conn.prepareStatement(
-                 "INSERT INTO uploaded_files (file_name, file_path, upload_time) VALUES (?, ?, ?)")) {
-
-            for (String[] file : files) {
-                stmt.setString(1, file[0]); // file_name
-                stmt.setString(2, file[1]); // file_path
-                stmt.setTimestamp(3, new Timestamp(System.currentTimeMillis())); // current timestamp
-                stmt.addBatch();
+        try (Connection conn = getConnection()) {
+            // Prepare statements for checking and inserting files
+            String checkQuery = "SELECT COUNT(*) FROM uploaded_files WHERE file_name = ? AND file_path = ?";
+            String insertQuery = "INSERT INTO uploaded_files (file_name, file_path, upload_time) VALUES (?, ?, ?)";
+    
+            try (PreparedStatement checkStmt = conn.prepareStatement(checkQuery);
+                 PreparedStatement insertStmt = conn.prepareStatement(insertQuery)) {
+    
+                for (String[] file : files) {
+                    // Check if the file already exists in the database
+                    checkStmt.setString(1, file[0]); // file_name
+                    checkStmt.setString(2, file[1]); // file_path
+                    try (ResultSet rs = checkStmt.executeQuery()) {
+                        if (rs.next() && rs.getInt(1) > 0) {
+                            // File already exists, skip insertion
+                            System.out.println("Skipping duplicate file: " + file[0]);
+                            continue;
+                        }
+                    }
+    
+                    // Insert the file into the database
+                    insertStmt.setString(1, file[0]); // file_name
+                    insertStmt.setString(2, file[1]); // file_path
+                    insertStmt.setTimestamp(3, new Timestamp(System.currentTimeMillis())); // current timestamp
+                    insertStmt.addBatch();
+                }
+    
+                // Execute the batch insert
+                insertStmt.executeBatch();
             }
-            stmt.executeBatch();
         }
     }
 
