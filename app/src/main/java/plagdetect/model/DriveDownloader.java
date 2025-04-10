@@ -1,95 +1,100 @@
 package plagdetect.model;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.InputStream;
-import java.net.URL;
-import java.net.URLConnection;
+import java.util.Collections;
 import java.util.List;
+
+import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
+import com.google.api.client.json.JsonFactory;
+import com.google.api.client.json.jackson2.JacksonFactory;
+import com.google.api.services.drive.Drive;
+import com.google.api.services.drive.DriveScopes;
+import com.google.auth.http.HttpCredentialsAdapter;
+import com.google.auth.oauth2.GoogleCredentials;
 
 public class DriveDownloader {
 
-    private final List<String[]> files = List.of(
-        new String[]{"1RUIOugmUS3bzIoBMkDp-viHI05nS3vhv", "URL_Shortner_Project.pdf"},
-        new String[]{"1mrL_Zkp-zVnb2STPqrdYGNMsJGDjn3BF", "Kubernetes_Deployment.pdf"}
-    );
-
-    // Public getter for the files list
-    public List<String[]> getFiles() {
-        return files;
-    }
+    private static final String APPLICATION_NAME = "PlagDetect";
+    private static final JsonFactory JSON_FACTORY = JacksonFactory.getDefaultInstance();
+    private static final List<String> SCOPES = Collections.singletonList(DriveScopes.DRIVE);
 
     /**
-     * Downloads all files from the internal list.
+     * Initializes the Google Drive API client using a Service Account.
+     * @return Drive service instance.
+     * @throws Exception if an error occurs during initialization.
      */
-    public void downloadFilesFromDrive() {
-        downloadFilesFromDrive(files);
+    private Drive getDriveService() throws Exception {
+        // Load service account credentials using getResourceAsStream
+        GoogleCredentials credentials;
+        try (InputStream in = getClass().getClassLoader().getResourceAsStream("credentials.json")) {
+            if (in == null) {
+                throw new Exception("Resource not found: credentials.json");
+            }
+            credentials = GoogleCredentials.fromStream(in).createScoped(SCOPES);
+        }
+
+        return new Drive.Builder(
+                GoogleNetHttpTransport.newTrustedTransport(),
+                JSON_FACTORY,
+                new HttpCredentialsAdapter(credentials))
+                .setApplicationName(APPLICATION_NAME)
+                .build();
     }
 
-    /**
-     * Downloads multiple files from Google Drive.
-     * @param files A list of file ID and file name pairs.
-     */
-    public void downloadFilesFromDrive(List<String[]> files) {
+    public void downloadFilesFromDrive(String folderLink) {
         try {
-            System.out.println("Connecting to Google Drive...");
-    
-            // Base submissions directory in main/resources
+            String folderId = extractFolderId(folderLink);
+            Drive driveService = getDriveService();
+
+            // List all files in the specified folder
+            Drive.Files.List request = driveService.files().list()
+                    .setQ("'" + folderId + "' in parents and trashed = false")
+                    .setFields("files(id, name)");
+            List<com.google.api.services.drive.model.File> files = request.execute().getFiles();
+
+            if (files == null || files.isEmpty()) {
+                System.out.println("No files found in the folder.");
+                return;
+            }
+
             String baseDownloadPath = "src/main/resources/submissions";
-            File baseDir = new File(baseDownloadPath);
+            java.io.File baseDir = new java.io.File(baseDownloadPath);
             if (!baseDir.exists()) {
                 baseDir.mkdirs();
                 System.out.println("Base directory created: " + baseDir.getAbsolutePath());
             }
-    
-            for (String[] file : files) {
-                String fileId = file[0];
-                String fileName = file[1];
-    
-                // Extract the directory name from the file name (remove the extension)
-                String directoryName = fileName.substring(0, fileName.lastIndexOf('.'));
-    
-                // Create a new directory for each file using the file name (without extension)
-                String userDirPath = baseDownloadPath + "/" + directoryName;
-                File userDir = new File(userDirPath);
-                if (!userDir.exists()) {
-                    userDir.mkdirs();
-                    System.out.println("Directory created: " + userDir.getAbsolutePath());
-                }
-    
-                // Download the file into the corresponding directory
-                String downloadUrl = "https://drive.google.com/uc?export=download&id=" + fileId;
-                System.out.println("Downloading from: " + downloadUrl);
-    
-                URL url = new URL(downloadUrl);
-                URLConnection conn = url.openConnection();
-    
-                try (InputStream in = conn.getInputStream();
-                     FileOutputStream out = new FileOutputStream(userDirPath + "/" + fileName)) {
-    
+
+            for (com.google.api.services.drive.model.File file : files) {
+                String fileId = file.getId();
+                String fileName = file.getName();
+
+                System.out.println("Downloading file: " + fileName);
+                try (InputStream inputStream = driveService.files().get(fileId).executeMediaAsInputStream();
+                     java.io.FileOutputStream outputStream = new java.io.FileOutputStream(baseDownloadPath + "/" + fileName)) {
+
                     byte[] buffer = new byte[4096];
                     int bytesRead;
-                    while ((bytesRead = in.read(buffer)) != -1) {
-                        out.write(buffer, 0, bytesRead);
+                    while ((bytesRead = inputStream.read(buffer)) != -1) {
+                        outputStream.write(buffer, 0, bytesRead);
                     }
+
+                    System.out.println("Downloaded successfully: " + baseDownloadPath + "/" + fileName);
                 }
-    
-                System.out.println("Downloaded successfully as: " + userDirPath + "/" + fileName);
             }
-    
-        } catch (IOException e) {
+        } catch (Exception e) {
             System.out.println("Failed to download files: " + e.getMessage());
         }
     }
 
-    /**
-     * Downloads a single file from Google Drive.
-     * @param fileId The ID of the file on Google Drive.
-     * @param fileName The name to save the file as.
-     */
-    public void downloadFileFromDrive(String fileId, String fileName) {
-        // Wrap the single file into a list and call the existing method
-        downloadFilesFromDrive(java.util.Collections.singletonList(new String[]{fileId, fileName}));
+    private String extractFolderId(String folderLink) {
+        if (folderLink.contains("/folders/")) {
+            String[] parts = folderLink.split("/folders/");
+            if (parts.length > 1) {
+                String[] idParts = parts[1].split("\\?");
+                return idParts[0];
+            }
+        }
+        throw new IllegalArgumentException("Invalid Google Drive folder link: " + folderLink);
     }
 }
+

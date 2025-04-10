@@ -1,11 +1,11 @@
 package plagdetect.controller;
 
-import plagdetect.model.DriveDownloader;
-import plagdetect.model.FileModel;
-
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+
+import plagdetect.model.DriveDownloader;
+import plagdetect.model.FileModel;
 
 public class FileController {
 
@@ -35,7 +35,12 @@ public class FileController {
      */
     public void downloadFilesFromDrive() throws Exception {
         DriveDownloader driveDownloader = new DriveDownloader();
-        driveDownloader.downloadFilesFromDrive(); // Delegate the download logic to DriveDownloader
+
+        // Replace this with your actual Google Drive folder link
+        String folderLink = "https://drive.google.com/drive/folders/1Y9bbEN2YejKMzUP_Hwb4DjcFUPTUQq55?usp=drive_link";
+
+        // Pass the folder link to the method
+        driveDownloader.downloadFilesFromDrive(folderLink);
     }
 
     public void syncDatabaseWithDirectory() throws Exception {
