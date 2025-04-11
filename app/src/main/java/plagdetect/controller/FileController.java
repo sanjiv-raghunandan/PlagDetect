@@ -59,14 +59,6 @@ public class FileController {
         List<File> directoryFiles = new ArrayList<>();
         getAllFiles(submissionsDir, directoryFiles);
 
-        // Filter files to include only .java and .cpp extensions
-        directoryFiles = directoryFiles.stream()
-            .filter(file -> {
-                String extension = getFileExtension(file.getName());
-                return extension.equals("java") || extension.equals("cpp");
-            })
-            .toList();
-
         // Create a list of file paths from the directory
         List<String> directoryFilePaths = new ArrayList<>();
         for (File file : directoryFiles) {
