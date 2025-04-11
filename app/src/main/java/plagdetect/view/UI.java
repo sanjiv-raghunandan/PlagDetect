@@ -47,7 +47,7 @@ public class UI extends Application {
 
         Scene scene = new Scene(vbox, 400, 200);
         primaryStage.setScene(scene);
-        primaryStage.setTitle("File Management");
+        primaryStage.setTitle("Plagiarism Detection App");
         primaryStage.show();
     }
 
