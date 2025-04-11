@@ -67,10 +67,18 @@ public class DriveDownloader {
             for (com.google.api.services.drive.model.File file : files) {
                 String fileId = file.getId();
                 String fileName = file.getName();
+                String fileBaseName = fileName.contains(".") ? fileName.substring(0, fileName.lastIndexOf('.')) : fileName;
+
+                // Create a subdirectory with the name of the file (excluding extension)
+                java.io.File subDir = new java.io.File(baseDownloadPath, fileBaseName);
+                if (!subDir.exists()) {
+                    subDir.mkdirs();
+                    System.out.println("Subdirectory created: " + subDir.getAbsolutePath());
+                }
 
                 System.out.println("Downloading file: " + fileName);
                 try (InputStream inputStream = driveService.files().get(fileId).executeMediaAsInputStream();
-                     java.io.FileOutputStream outputStream = new java.io.FileOutputStream(baseDownloadPath + "/" + fileName)) {
+                     java.io.FileOutputStream outputStream = new java.io.FileOutputStream(new java.io.File(subDir, fileName))) {
 
                     byte[] buffer = new byte[4096];
                     int bytesRead;
@@ -78,7 +86,7 @@ public class DriveDownloader {
                         outputStream.write(buffer, 0, bytesRead);
                     }
 
-                    System.out.println("Downloaded successfully: " + baseDownloadPath + "/" + fileName);
+                    System.out.println("Downloaded successfully: " + new java.io.File(subDir, fileName).getAbsolutePath());
                 }
             }
         } catch (Exception e) {

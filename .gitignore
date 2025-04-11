@@ -14,3 +14,4 @@ bin/
 app/libs/*.jar
 
 app/src/main/resources/credentials.json
+.settings

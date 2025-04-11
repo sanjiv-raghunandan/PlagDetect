@@ -1,4 +1,4 @@
-// package plagdetect.controller;
+//package plagdetect.model;
 
 // import java.util.ArrayList;
 // import java.util.List;
@@ -12,7 +12,7 @@
 // import java.io.File;
 // import java.io.IOException;
 
-// public class PlagiarismDetection {
+// public class MetadataExtractor {
 //     private static final String SUB_DIR = "submissions";
 //     private static final String RES_DIR = "results";
 
