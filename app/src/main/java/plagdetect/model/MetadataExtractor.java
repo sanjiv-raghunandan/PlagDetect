@@ -4,15 +4,12 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 public class MetadataExtractor {
-    private static final String SUB_DIR = "submissions";
 
     public static void main(String[] args) {
         try {
@@ -23,8 +20,13 @@ public class MetadataExtractor {
                 return;
             }
             
-            System.out.println("Found " + submissions.size() + " submissions.");
-
+            System.out.println("Found " + submissions.size() + " submissions:");
+    
+            // Print all files for debugging
+            for (File file : submissions) {
+                System.out.println("File: " + file.getAbsolutePath());
+            }
+    
             List<Map<String, String>> fileMetadata = extractFileMetadata(submissions);
             
             sendToDatabase(fileMetadata);
@@ -33,19 +35,16 @@ public class MetadataExtractor {
             e.printStackTrace();
         }
     }
-
     public static List<File> getSubmissions() throws IOException {
-        Path subPath = Paths.get(SUB_DIR);
+        Path subPath = Path.of("src/main/resources/submissions");
 
         if (!Files.exists(subPath)) {
-            System.err.println("Submissions directory does not exist");
-            return new ArrayList<>();
+            throw new IOException("Submissions directory does not exist.");
         }
 
-        return Files.list(subPath)
-            .filter(Files::isRegularFile)
-            .map(Path::toFile)
-            .collect(Collectors.toList());
+        List<File> allFiles = new ArrayList<>();
+        getAllFiles(subPath.toFile(), allFiles); // Recursively collect all files
+        return allFiles;
     }
 
     public static List<Map<String, String>> extractFileMetadata(List<File> files) {
@@ -54,17 +53,38 @@ public class MetadataExtractor {
         for (File file : files) {
             Map<String, String> metadata = new HashMap<>();
             
-            // Extract only file name and file extension
-            metadata.put("fileName", file.getName());
-            metadata.put("fileExtension", getFileExtension(file.getName()));
+            String fileName = file.getName();
+            String fileExtension = getFileExtension(fileName);
+
+            // Check if the file extension is valid
+            if (!fileExtension.equals("java") && !fileExtension.equals("cpp")) {
+                fileExtension = "invalid"; // Mark as invalid if not .java or .cpp
+            }
+
+            metadata.put("fileName", fileName);
+            metadata.put("fileExtension", fileExtension);
             
             metadataList.add(metadata);
         }
         
         return metadataList;
     }
-    
-    // Send metadata to the database
+
+    private static void getAllFiles(File directory, List<File> fileList) {
+        File[] files = directory.listFiles();
+        if (files != null) {
+            for (File file : files) {
+                if (file.isDirectory()) {
+                    // Recursive call for subdirectories
+                    getAllFiles(file, fileList);
+                } else {
+                    // Add file to the list
+                    fileList.add(file);
+                }
+            }
+        }
+    }
+
     private static void sendToDatabase(List<Map<String, String>> metadataList) {
         // TODO: Implement database connection and storage
         System.out.println("Sending " + metadataList.size() + " records to database...");
@@ -72,13 +92,16 @@ public class MetadataExtractor {
             System.out.println("File Name: " + metadata.get("fileName") + ", File Extension: " + metadata.get("fileExtension"));
         }
     }
-    
-    // Get file extension from filename
+
     private static String getFileExtension(String fileName) {
-        int lastDotIndex = fileName.lastIndexOf('.');
-        if (lastDotIndex > 0) {
-            return fileName.substring(lastDotIndex + 1);
+        if (fileName == null || fileName.isEmpty()) {
+            return "unknown"; // Handle null or empty file names
         }
-        return ""; // Return empty string if no extension is found
+
+        int lastDotIndex = fileName.lastIndexOf('.');
+        if (lastDotIndex > 0 && lastDotIndex < fileName.length() - 1) {
+            return fileName.substring(lastDotIndex + 1).toLowerCase().trim(); // Convert to lowercase and trim spaces
+        }
+        return "unknown"; // Return "unknown" if no valid extension is found
     }
 }

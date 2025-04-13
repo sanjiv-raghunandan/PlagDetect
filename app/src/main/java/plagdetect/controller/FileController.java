@@ -2,21 +2,41 @@ package plagdetect.controller;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javafx.geometry.Insets;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
+import javafx.scene.layout.VBox;
 import plagdetect.model.DriveDownloader;
 import plagdetect.model.FileModel;
+import plagdetect.model.MetadataExtractor;
 
 public class FileController {
 
-    public void uploadFiles(List<File> files) throws Exception {
-        List<String[]> fileData = new ArrayList<>();
-        for (File file : files) {
-            fileData.add(new String[]{file.getName(), file.getAbsolutePath()});
+    private List<Map<String, String>> temporaryMetadata = new ArrayList<>();
+
+    public void uploadFiles(List<File> directories) throws Exception {
+        // Collect all files from the provided directories (including subdirectories)
+        List<File> allFiles = new ArrayList<>();
+        for (File directory : directories) {
+            if (directory.isDirectory()) {
+                getAllFiles(directory, allFiles); // Recursively collect files
+            } else {
+                allFiles.add(directory); // Add individual files directly
+            }
         }
-        FileModel.saveFiles(fileData);
+
+        // Extract metadata using MetadataExtractor
+        temporaryMetadata = MetadataExtractor.extractFileMetadata(allFiles);
+
+        // Log the uploaded files
+        System.out.println("Uploaded " + temporaryMetadata.size() + " files (metadata stored temporarily):");
+        for (Map<String, String> metadata : temporaryMetadata) {
+            System.out.println("File Name: " + metadata.get("fileName") + ", File Extension: " + metadata.get("fileExtension"));
+        }
     }
 
     public List<String[]> getUploadedFiles() throws Exception {
@@ -38,7 +58,7 @@ public class FileController {
     public void downloadFilesFromDrive() throws Exception {
         DriveDownloader driveDownloader = new DriveDownloader();
 
-        // Replace this with your actual Google Drive folder link
+        
         String folderLink = "https://drive.google.com/drive/folders/1zM8zhJlAnbvwx589GA5g079erkTyWiSx";
 
         // Pass the folder link to the method
@@ -46,93 +66,34 @@ public class FileController {
     }
 
     public void syncDatabaseWithDirectory() throws Exception {
-        // Get all files from the database
-        List<String[]> dbFiles = FileModel.getUploadedFiles();
-
-        // Locate the submissions directory
-        File submissionsDir = new File("src/main/resources/submissions");
-        if (!submissionsDir.exists() || !submissionsDir.isDirectory()) {
-            throw new Exception("Submissions directory does not exist.");
+        if (temporaryMetadata.isEmpty()) {
+            System.out.println("No files to sync with the database.");
+            return;
         }
 
-        // Get all files in the directory (including subdirectories)
-        List<File> directoryFiles = new ArrayList<>();
-        getAllFiles(submissionsDir, directoryFiles);
+        // Convert metadata to the format required by FileModel
+        List<String[]> fileData = temporaryMetadata.stream()
+            .map(metadata -> new String[]{
+                metadata.get("fileName"),
+                metadata.get("fileExtension")
+            })
+            .toList();
 
-        // Create a list of file paths from the directory
-        List<String> directoryFilePaths = new ArrayList<>();
-        for (File file : directoryFiles) {
-            directoryFilePaths.add(file.getAbsolutePath());
+        // Save files to the database
+        FileModel.saveFiles(fileData);
+
+        // Log the synced files
+        System.out.println("Synced " + fileData.size() + " files with the database:");
+        for (String[] data : fileData) {
+            System.out.println("File Name: " + data[0] + ", File Extension: " + data[1]);
         }
 
-        // Compare database files with directory files
-        for (String[] dbFile : dbFiles) {
-            String filePath = dbFile[1]; // File path from the database
-            if (!directoryFilePaths.contains(filePath)) {
-                // File is missing in the directory, delete it from the database
-                FileModel.deleteFile(dbFile[0]);
-                System.out.println("Deleted missing file from database: " + dbFile[0]);
-            }
-        }
-
-        // Add new files from the directory to the database
-        for (File file : directoryFiles) {
-            boolean existsInDb = dbFiles.stream().anyMatch(dbFile -> dbFile[1].equals(file.getAbsolutePath()));
-            if (!existsInDb) {
-                // Extract the file extension
-                String fileExtension = getFileExtension(file.getName());
-
-                // File is new, add it to the database
-                List<String[]> newFileData = new ArrayList<>();
-                newFileData.add(new String[]{file.getName(), fileExtension}); // Use file extension instead of file path
-                FileModel.saveFiles(newFileData); // Pass a List<String[]> to saveFiles
-                System.out.println("Added new file to database: " + file.getName());
-            }
-        }
+        // Clear the temporary metadata after syncing
+        temporaryMetadata.clear();
     }
 
-    /**
-     * Extracts metadata (file name and file extension) for files in the submissions directory.
-     * @throws Exception if an error occurs during metadata extraction.
-     */
-    public void extractAndStoreMetadata() throws Exception {
-        // Locate the submissions directory
-        File submissionsDir = new File("src/main/resources/submissions");
-        if (!submissionsDir.exists() || !submissionsDir.isDirectory()) {
-            throw new Exception("Submissions directory does not exist.");
-        }
-
-        // Get all files in the directory
-        List<File> files = new ArrayList<>();
-        getAllFiles(submissionsDir, files);
-
-        // Extract metadata
-        List<Map<String, String>> metadataList = new ArrayList<>();
-        for (File file : files) {
-            Map<String, String> metadata = new HashMap<>();
-            metadata.put("fileName", file.getName());
-            metadata.put("fileExtension", getFileExtension(file.getName()));
-            metadataList.add(metadata);
-        }
-
-        // Send metadata to the database (or print for now)
-        sendMetadataToDatabase(metadataList);
-    }
-
-    private void sendMetadataToDatabase(List<Map<String, String>> metadataList) {
-        System.out.println("Sending metadata to database...");
-        for (Map<String, String> metadata : metadataList) {
-            System.out.println("File Name: " + metadata.get("fileName") + ", File Extension: " + metadata.get("fileExtension"));
-            // TODO: Implement actual database storage logic here
-        }
-    }
-
-    private String getFileExtension(String fileName) {
-        int lastDotIndex = fileName.lastIndexOf('.');
-        if (lastDotIndex > 0) {
-            return fileName.substring(lastDotIndex + 1);
-        }
-        return ""; // Return empty string if no extension is found
+    public List<Map<String, String>> getTemporaryMetadata() {
+        return temporaryMetadata;
     }
 
     private void getAllFiles(File directory, List<File> fileList) {
@@ -146,5 +107,57 @@ public class FileController {
                 }
             }
         }
+    }
+
+    private void viewUploadedFiles() {
+        try {
+            VBox fileListLayout = new VBox();
+            fileListLayout.setSpacing(10);
+            fileListLayout.setPadding(new Insets(10));
+
+            // Display temporary metadata
+            List<Map<String, String>> temporaryMetadata = getTemporaryMetadata();
+            if (temporaryMetadata.isEmpty()) {
+                Label noFilesLabel = new Label("No files uploaded yet.");
+                noFilesLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: #333;");
+                fileListLayout.getChildren().add(noFilesLabel);
+            } else {
+                for (Map<String, String> metadata : temporaryMetadata) {
+                    VBox fileEntry = new VBox();
+                    fileEntry.setSpacing(5);
+                    fileEntry.setStyle("-fx-background-color: #ffffff; -fx-padding: 10px; -fx-border-color: #ccc; -fx-border-width: 1px;");
+
+                    Label fileNameLabel = new Label("File Name: " + metadata.get("fileName"));
+                    fileNameLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: #333;");
+
+                    Label fileExtensionLabel = new Label("File Extension: " + metadata.get("fileExtension"));
+                    fileExtensionLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: #333;");
+
+                    fileEntry.getChildren().addAll(fileNameLabel, fileExtensionLabel);
+                    fileListLayout.getChildren().add(fileEntry);
+                }
+            }
+
+            ScrollPane scrollPane = new ScrollPane(fileListLayout);
+            scrollPane.setFitToWidth(true);
+            scrollPane.setPrefSize(600, 400);
+
+            Alert alert = new Alert(Alert.AlertType.INFORMATION);
+            alert.setTitle("Uploaded Files");
+            alert.setHeaderText("List of Uploaded Files (Temporary)");
+            alert.getDialogPane().setContent(scrollPane);
+            alert.showAndWait();
+
+        } catch (Exception e) {
+            showAlert("Error", "Error retrieving uploaded files: " + e.getMessage());
+        }
+    }
+
+    private void showAlert(String title, String message) {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
     }
 }
