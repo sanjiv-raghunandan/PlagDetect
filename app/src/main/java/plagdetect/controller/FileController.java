@@ -138,21 +138,38 @@ public class FileController {
         List<File> allFiles = new ArrayList<>();
         getAllFiles(submissionsDir, allFiles);
 
-        // Extract metadata for all files
-        List<Map<String, String>> metadataList = MetadataExtractor.extractFileMetadata(allFiles);
+        // Extract file names from the local directory
+        List<String> localFileNames = allFiles.stream()
+            .map(File::getName)
+            .toList();
 
-        // Compare with the database and add missing files
+        // Retrieve all files from the database
         List<String[]> dbFiles = FileModel.getUploadedFiles();
-        List<String> dbFileNames = dbFiles.stream().map(file -> file[0]).toList();
+        List<String> dbFileNames = dbFiles.stream()
+            .map(file -> file[0]) // Extract file names from the database entries
+            .toList();
 
-        List<String[]> newFiles = metadataList.stream()
-            .filter(metadata -> !dbFileNames.contains(metadata.get("fileName")))
-            .map(metadata -> new String[]{
-                metadata.get("fileName"),
-                metadata.get("fileExtension")
+        // Identify files that are in the database but not in the local directory
+        List<String> filesToDeleteFromDb = dbFileNames.stream()
+            .filter(fileName -> !localFileNames.contains(fileName))
+            .toList();
+
+        // Delete missing files from the database
+        for (String fileName : filesToDeleteFromDb) {
+            FileModel.deleteFile(fileName);
+            System.out.println("Deleted '" + fileName + "' from the database as it no longer exists locally.");
+        }
+
+        // Identify new files to add to the database
+        List<String[]> newFiles = allFiles.stream()
+            .filter(file -> !dbFileNames.contains(file.getName()))
+            .map(file -> new String[]{
+                file.getName(),
+                getFileExtension(file.getName())
             })
             .toList();
 
+        // Add new files to the database
         if (!newFiles.isEmpty()) {
             FileModel.saveFiles(newFiles);
             System.out.println("Synced " + newFiles.size() + " new files with the database:");
@@ -162,6 +179,12 @@ public class FileController {
         } else {
             System.out.println("No new files to sync with the database.");
         }
+    }
+
+    // Helper method to get the file extension
+    private String getFileExtension(String fileName) {
+        int lastDotIndex = fileName.lastIndexOf('.');
+        return (lastDotIndex == -1) ? "" : fileName.substring(lastDotIndex + 1);
     }
 
     public List<Map<String, String>> getTemporaryMetadata() {
