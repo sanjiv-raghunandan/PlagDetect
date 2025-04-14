@@ -10,6 +10,7 @@ import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.Button;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.VBox;
@@ -98,48 +99,59 @@ public class UI extends Application {
     }
 
     private void viewUploadedFiles() {
-        try {
-            VBox fileListLayout = new VBox();
-            fileListLayout.setSpacing(10);
-            fileListLayout.setPadding(new Insets(10));
+    try {
+        VBox fileListLayout = new VBox();
+        fileListLayout.setSpacing(10);
+        fileListLayout.setPadding(new Insets(10));
 
-            Button deleteAllButton = new Button("Delete All Files");
-            styleButton(deleteAllButton);
-            deleteAllButton.setOnAction(e -> {
-                try {
-                    fileController.deleteAllFiles();
-                    deleteAllFilesFromSubmissions();
-                    showAlert("Success", "All files deleted successfully.");
-                    loadFileList(fileListLayout);
-                } catch (Exception ex) {
-                    showAlert("Error", "Error deleting files: " + ex.getMessage());
-                }
-            });
+        // Add checkboxes for filtering
+        CheckBox showValidFilesCheckBox = new CheckBox("Show valid files");
+        CheckBox showInvalidFilesCheckBox = new CheckBox("Show invalid files");
+        showValidFilesCheckBox.setSelected(true); // Default to showing valid files
+        showInvalidFilesCheckBox.setSelected(true); // Default to showing invalid files
 
-            Button syncDatabaseButton = new Button("Sync Database");
-            styleButton(syncDatabaseButton);
-            syncDatabaseButton.setOnAction(e -> {
-                try {
-                    fileController.syncDatabaseWithDirectory();
-                    showAlert("Success", "Database synchronized with the directory successfully.");
-                    loadFileList(fileListLayout);
-                } catch (Exception ex) {
-                    showAlert("Error", "Error synchronizing database with the directory: " + ex.getMessage());
-                }
-            });
+        // Add buttons for actions
+        Button deleteAllButton = new Button("Delete All Files");
+        styleButton(deleteAllButton);
+        deleteAllButton.setOnAction(e -> {
+            try {
+                fileController.deleteAllFiles();
+                deleteAllFilesFromSubmissions();
+                showAlert("Success", "All files deleted successfully.");
+                loadFileList(fileListLayout, showValidFilesCheckBox.isSelected(), showInvalidFilesCheckBox.isSelected());
+            } catch (Exception ex) {
+                showAlert("Error", "Error deleting files: " + ex.getMessage());
+            }
+        });
 
-            fileListLayout.getChildren().addAll(deleteAllButton, syncDatabaseButton);
-            loadFileList(fileListLayout);
+        Button syncDatabaseButton = new Button("Sync Database");
+        styleButton(syncDatabaseButton);
+        syncDatabaseButton.setOnAction(e -> {
+            try {
+                fileController.syncDatabaseWithDirectory();
+                showAlert("Success", "Database synchronized with the directory successfully.");
+                loadFileList(fileListLayout, showValidFilesCheckBox.isSelected(), showInvalidFilesCheckBox.isSelected());
+            } catch (Exception ex) {
+                showAlert("Error", "Error synchronizing database with the directory: " + ex.getMessage());
+            }
+        });
 
-            ScrollPane scrollPane = new ScrollPane(fileListLayout);
-            scrollPane.setFitToWidth(true);
-            scrollPane.setPrefSize(600, 400);
+        // Add listeners to checkboxes to update the file list dynamically
+        showValidFilesCheckBox.setOnAction(e -> loadFileList(fileListLayout, showValidFilesCheckBox.isSelected(), showInvalidFilesCheckBox.isSelected()));
+        showInvalidFilesCheckBox.setOnAction(e -> loadFileList(fileListLayout, showValidFilesCheckBox.isSelected(), showInvalidFilesCheckBox.isSelected()));
 
-            Alert alert = new Alert(Alert.AlertType.INFORMATION);
-            alert.setTitle("Uploaded Files");
-            alert.setHeaderText("List of Uploaded Files");
-            alert.getDialogPane().setContent(scrollPane);
-            alert.showAndWait();
+        fileListLayout.getChildren().addAll(showValidFilesCheckBox, showInvalidFilesCheckBox, deleteAllButton, syncDatabaseButton);
+        loadFileList(fileListLayout, showValidFilesCheckBox.isSelected(), showInvalidFilesCheckBox.isSelected());
+
+        ScrollPane scrollPane = new ScrollPane(fileListLayout);
+        scrollPane.setFitToWidth(true);
+        scrollPane.setPrefSize(600, 400);
+
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle("Uploaded Files");
+        alert.setHeaderText("List of Uploaded Files");
+        alert.getDialogPane().setContent(scrollPane);
+        alert.showAndWait();
 
         } catch (Exception e) {
             showAlert("Error", "Error retrieving uploaded files: " + e.getMessage());
@@ -176,38 +188,46 @@ public class UI extends Application {
         directory.delete();
     }
 
-    private void loadFileList(VBox fileListLayout) {
+    private void loadFileList(VBox fileListLayout, boolean showValid, boolean showInvalid) {
         try {
             List<String[]> files = fileController.getUploadedFiles();
             fileListLayout.getChildren().removeIf(node -> node instanceof VBox);
-
+    
             int index = 1;
             for (String[] file : files) {
+                String fileExtension = file[1];
+                boolean isValid = !fileExtension.equals("invalid");
+    
+                // Skip files based on the checkbox states
+                if ((isValid && !showValid) || (!isValid && !showInvalid)) {
+                    continue;
+                }
+    
                 VBox fileEntry = new VBox();
                 fileEntry.setSpacing(5);
-
+    
                 Label fileNameLabel = new Label(index++ + ". File Name: " + file[0]);
                 fileNameLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: #333;");
-
-                Label fileExtensionLabel = new Label("File extension: " + file[1]);
+    
+                Label fileExtensionLabel = new Label("File extension: " + fileExtension);
                 fileExtensionLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: #333;");
-
+    
                 Button deleteButton = new Button("Delete");
                 styleButton(deleteButton);
                 deleteButton.setOnAction(e -> {
                     try {
                         fileController.deleteFile(file[0]); // Delete from database and local directory
                         showAlert("Success", "File '" + file[0] + "' deleted successfully.");
-                        loadFileList(fileListLayout); // Reload the file list
+                        loadFileList(fileListLayout, showValid, showInvalid); // Reload the file list
                     } catch (Exception ex) {
                         showAlert("Error", "Error deleting file: " + ex.getMessage());
                     }
                 });
-
+    
                 fileEntry.getChildren().addAll(fileNameLabel, fileExtensionLabel, deleteButton);
                 fileListLayout.getChildren().add(fileEntry);
             }
-
+    
         } catch (Exception e) {
             showAlert("Error", "Error loading file list: " + e.getMessage());
         }

@@ -4,12 +4,6 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
-import javafx.geometry.Insets;
-import javafx.scene.control.Alert;
-import javafx.scene.control.Label;
-import javafx.scene.control.ScrollPane;
-import javafx.scene.layout.VBox;
 import plagdetect.model.DriveDownloader;
 import plagdetect.model.FileModel;
 import plagdetect.model.MetadataExtractor;
@@ -137,38 +131,48 @@ public class FileController {
         File submissionsDir = new File("src/main/resources/submissions");
         List<File> allFiles = new ArrayList<>();
         getAllFiles(submissionsDir, allFiles);
-
+    
         // Extract file names from the local directory
         List<String> localFileNames = allFiles.stream()
             .map(File::getName)
             .toList();
-
+    
         // Retrieve all files from the database
         List<String[]> dbFiles = FileModel.getUploadedFiles();
         List<String> dbFileNames = dbFiles.stream()
             .map(file -> file[0]) // Extract file names from the database entries
             .toList();
-
+    
         // Identify files that are in the database but not in the local directory
         List<String> filesToDeleteFromDb = dbFileNames.stream()
             .filter(fileName -> !localFileNames.contains(fileName))
             .toList();
-
+    
         // Delete missing files from the database
         for (String fileName : filesToDeleteFromDb) {
             FileModel.deleteFile(fileName);
             System.out.println("Deleted '" + fileName + "' from the database as it no longer exists locally.");
         }
-
+    
+        // Define valid extensions
+        List<String> validExtensions = List.of("java", "cpp");
+    
         // Identify new files to add to the database
         List<String[]> newFiles = allFiles.stream()
             .filter(file -> !dbFileNames.contains(file.getName()))
-            .map(file -> new String[]{
-                file.getName(),
-                getFileExtension(file.getName())
+            .map(file -> {
+                String fileName = file.getName();
+                String fileExtension = getFileExtension(fileName);
+    
+                // Check if the file extension is valid
+                if (!validExtensions.contains(fileExtension)) {
+                    fileExtension = "invalid"; // Mark as invalid if not .java or .cpp
+                }
+    
+                return new String[]{fileName, fileExtension};
             })
             .toList();
-
+    
         // Add new files to the database
         if (!newFiles.isEmpty()) {
             FileModel.saveFiles(newFiles);
@@ -202,57 +206,5 @@ public class FileController {
                 }
             }
         }
-    }
-
-    private void viewUploadedFiles() {
-        try {
-            VBox fileListLayout = new VBox();
-            fileListLayout.setSpacing(10);
-            fileListLayout.setPadding(new Insets(10));
-
-            // Display temporary metadata
-            List<Map<String, String>> temporaryMetadata = getTemporaryMetadata();
-            if (temporaryMetadata.isEmpty()) {
-                Label noFilesLabel = new Label("No files uploaded yet.");
-                noFilesLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: #333;");
-                fileListLayout.getChildren().add(noFilesLabel);
-            } else {
-                for (Map<String, String> metadata : temporaryMetadata) {
-                    VBox fileEntry = new VBox();
-                    fileEntry.setSpacing(5);
-                    fileEntry.setStyle("-fx-background-color: #ffffff; -fx-padding: 10px; -fx-border-color: #ccc; -fx-border-width: 1px;");
-
-                    Label fileNameLabel = new Label("File Name: " + metadata.get("fileName"));
-                    fileNameLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: #333;");
-
-                    Label fileExtensionLabel = new Label("File Extension: " + metadata.get("fileExtension"));
-                    fileExtensionLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: #333;");
-
-                    fileEntry.getChildren().addAll(fileNameLabel, fileExtensionLabel);
-                    fileListLayout.getChildren().add(fileEntry);
-                }
-            }
-
-            ScrollPane scrollPane = new ScrollPane(fileListLayout);
-            scrollPane.setFitToWidth(true);
-            scrollPane.setPrefSize(600, 400);
-
-            Alert alert = new Alert(Alert.AlertType.INFORMATION);
-            alert.setTitle("Uploaded Files");
-            alert.setHeaderText("List of Uploaded Files (Temporary)");
-            alert.getDialogPane().setContent(scrollPane);
-            alert.showAndWait();
-
-        } catch (Exception e) {
-            showAlert("Error", "Error retrieving uploaded files: " + e.getMessage());
-        }
-    }
-
-    private void showAlert(String title, String message) {
-        Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.setTitle(title);
-        alert.setHeaderText(null);
-        alert.setContentText(message);
-        alert.showAndWait();
     }
 }
