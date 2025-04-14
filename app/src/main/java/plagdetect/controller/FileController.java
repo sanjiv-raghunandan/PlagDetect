@@ -32,10 +32,21 @@ public class FileController {
         // Extract metadata using MetadataExtractor
         temporaryMetadata = MetadataExtractor.extractFileMetadata(allFiles);
 
+        // Convert metadata to the format required by FileModel
+        List<String[]> fileData = temporaryMetadata.stream()
+            .map(metadata -> new String[]{
+                metadata.get("fileName"),
+                metadata.get("fileExtension")
+            })
+            .toList();
+
+        // Save files to the database
+        FileModel.saveFiles(fileData);
+
         // Log the uploaded files
-        System.out.println("Uploaded " + temporaryMetadata.size() + " files (metadata stored temporarily):");
-        for (Map<String, String> metadata : temporaryMetadata) {
-            System.out.println("File Name: " + metadata.get("fileName") + ", File Extension: " + metadata.get("fileExtension"));
+        System.out.println("Uploaded " + fileData.size() + " files to the database:");
+        for (String[] data : fileData) {
+            System.out.println("File Name: " + data[0] + ", File Extension: " + data[1]);
         }
     }
 
@@ -48,7 +59,63 @@ public class FileController {
     }
 
     public void deleteFile(String fileName) throws Exception {
+        // Delete the file from the database
         FileModel.deleteFile(fileName);
+
+        // Locate the file in the local directory
+        File submissionsDir = new File("src/main/resources/submissions");
+        File[] files = submissionsDir.listFiles();
+        if (files != null) {
+            for (File file : files) {
+                if (file.isFile() && file.getName().equals(fileName)) {
+                    if (file.delete()) {
+                        System.out.println("File '" + fileName + "' deleted from the local directory.");
+                        deleteEmptyParentDirectories(file.getParentFile()); // Check and delete empty parent directories
+                    } else {
+                        throw new Exception("Failed to delete file '" + fileName + "' from the local directory.");
+                    }
+                    return;
+                } else if (file.isDirectory()) {
+                    // Recursively search in subdirectories
+                    if (deleteFileFromDirectory(file, fileName)) {
+                        return;
+                    }
+                }
+            }
+        }
+
+        throw new Exception("File '" + fileName + "' not found in the local directory.");
+    }
+
+    // Helper method to delete a file from subdirectories
+    private boolean deleteFileFromDirectory(File directory, String fileName) {
+        File[] files = directory.listFiles();
+        if (files != null) {
+            for (File file : files) {
+                if (file.isFile() && file.getName().equals(fileName)) {
+                    if (file.delete()) {
+                        System.out.println("File '" + fileName + "' deleted from the local directory.");
+                        deleteEmptyParentDirectories(file.getParentFile()); // Check and delete empty parent directories
+                        return true;
+                    }
+                } else if (file.isDirectory()) {
+                    if (deleteFileFromDirectory(file, fileName)) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    // Helper method to delete empty parent directories recursively
+    private void deleteEmptyParentDirectories(File directory) {
+        if (directory != null && directory.isDirectory() && directory.list().length == 0) {
+            if (directory.delete()) {
+                System.out.println("Directory '" + directory.getAbsolutePath() + "' deleted as it was empty.");
+                deleteEmptyParentDirectories(directory.getParentFile()); // Recursively check the parent directory
+            }
+        }
     }
 
     /**
@@ -66,30 +133,35 @@ public class FileController {
     }
 
     public void syncDatabaseWithDirectory() throws Exception {
-        if (temporaryMetadata.isEmpty()) {
-            System.out.println("No files to sync with the database.");
-            return;
-        }
+        // Get all files from the submissions directory
+        File submissionsDir = new File("src/main/resources/submissions");
+        List<File> allFiles = new ArrayList<>();
+        getAllFiles(submissionsDir, allFiles);
 
-        // Convert metadata to the format required by FileModel
-        List<String[]> fileData = temporaryMetadata.stream()
+        // Extract metadata for all files
+        List<Map<String, String>> metadataList = MetadataExtractor.extractFileMetadata(allFiles);
+
+        // Compare with the database and add missing files
+        List<String[]> dbFiles = FileModel.getUploadedFiles();
+        List<String> dbFileNames = dbFiles.stream().map(file -> file[0]).toList();
+
+        List<String[]> newFiles = metadataList.stream()
+            .filter(metadata -> !dbFileNames.contains(metadata.get("fileName")))
             .map(metadata -> new String[]{
                 metadata.get("fileName"),
                 metadata.get("fileExtension")
             })
             .toList();
 
-        // Save files to the database
-        FileModel.saveFiles(fileData);
-
-        // Log the synced files
-        System.out.println("Synced " + fileData.size() + " files with the database:");
-        for (String[] data : fileData) {
-            System.out.println("File Name: " + data[0] + ", File Extension: " + data[1]);
+        if (!newFiles.isEmpty()) {
+            FileModel.saveFiles(newFiles);
+            System.out.println("Synced " + newFiles.size() + " new files with the database:");
+            for (String[] file : newFiles) {
+                System.out.println("File Name: " + file[0] + ", File Extension: " + file[1]);
+            }
+        } else {
+            System.out.println("No new files to sync with the database.");
         }
-
-        // Clear the temporary metadata after syncing
-        temporaryMetadata.clear();
     }
 
     public List<Map<String, String>> getTemporaryMetadata() {

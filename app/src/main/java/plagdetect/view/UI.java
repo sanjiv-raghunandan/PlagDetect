@@ -192,21 +192,19 @@ public class UI extends Application {
                 Label fileExtensionLabel = new Label("File extension: " + file[1]);
                 fileExtensionLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: #333;");
 
-                
-
                 Button deleteButton = new Button("Delete");
                 styleButton(deleteButton);
                 deleteButton.setOnAction(e -> {
                     try {
-                        fileController.deleteFile(file[0]);
+                        fileController.deleteFile(file[0]); // Delete from database and local directory
                         showAlert("Success", "File '" + file[0] + "' deleted successfully.");
-                        loadFileList(fileListLayout);
+                        loadFileList(fileListLayout); // Reload the file list
                     } catch (Exception ex) {
                         showAlert("Error", "Error deleting file: " + ex.getMessage());
                     }
                 });
 
-                fileEntry.getChildren().addAll(fileNameLabel, fileExtensionLabel,  deleteButton);
+                fileEntry.getChildren().addAll(fileNameLabel, fileExtensionLabel, deleteButton);
                 fileListLayout.getChildren().add(fileEntry);
             }
 
