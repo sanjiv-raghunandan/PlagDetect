@@ -50,6 +50,9 @@ public class MetadataExtractor {
     public static List<Map<String, String>> extractFileMetadata(List<File> files) {
         List<Map<String, String>> metadataList = new ArrayList<>();
         
+        // Define valid extensions
+        List<String> validExtensions = List.of("java", "cpp");
+
         for (File file : files) {
             Map<String, String> metadata = new HashMap<>();
             
@@ -57,8 +60,8 @@ public class MetadataExtractor {
             String fileExtension = getFileExtension(fileName);
 
             // Check if the file extension is valid
-            if (!fileExtension.equals("java") && !fileExtension.equals("cpp")) {
-                fileExtension = "invalid"; // Mark as invalid if not .java or .cpp
+            if (!validExtensions.contains(fileExtension)) {
+                fileExtension = "invalid"; 
             }
 
             metadata.put("fileName", fileName);
