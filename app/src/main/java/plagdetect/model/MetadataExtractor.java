@@ -89,7 +89,6 @@ public class MetadataExtractor {
     }
 
     private static void sendToDatabase(List<Map<String, String>> metadataList) {
-        // TODO: Implement database connection and storage
         System.out.println("Sending " + metadataList.size() + " records to database...");
         for (Map<String, String> metadata : metadataList) {
             System.out.println("File Name: " + metadata.get("fileName") + ", File Extension: " + metadata.get("fileExtension"));

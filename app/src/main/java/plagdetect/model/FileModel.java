@@ -29,12 +29,14 @@ public class FileModel {
 
     public static void saveFiles(List<String[]> files) throws Exception {
         try (Connection conn = getConnection()) {
-            // Prepare statements for checking and inserting files
+            // Prepare statements for checking, inserting, and updating files
             String checkQuery = "SELECT COUNT(*) FROM uploaded_files WHERE file_name = ?";
             String insertQuery = "INSERT INTO uploaded_files (file_name, format) VALUES (?, ?)";
+            String updateQuery = "UPDATE uploaded_files SET validity = ? WHERE file_name = ?";
 
             try (PreparedStatement checkStmt = conn.prepareStatement(checkQuery);
-                 PreparedStatement insertStmt = conn.prepareStatement(insertQuery)) {
+                 PreparedStatement insertStmt = conn.prepareStatement(insertQuery);
+                 PreparedStatement updateStmt = conn.prepareStatement(updateQuery)) {
 
                 for (String[] file : files) {
                     // Check if the file already exists in the database
@@ -51,12 +53,25 @@ public class FileModel {
                     insertStmt.setString(1, file[0]); // file_name
                     insertStmt.setString(2, file[1]); // format
                     insertStmt.addBatch();
+
+                    // Classify the file as valid or invalid based on its format
+                    String validity = isValidFormat(file[1]) ? "valid" : "invalid";
+                    updateStmt.setString(1, validity); // validity (valid/invalid)
+                    updateStmt.setString(2, file[0]);  // file_name
+                    updateStmt.addBatch();
                 }
 
-                // Execute the batch insert
+                // Execute the batch insert and update
                 insertStmt.executeBatch();
+                updateStmt.executeBatch();
             }
         }
+    }
+
+    // Helper method to check if a file format is valid
+    private static boolean isValidFormat(String format) {
+        List<String> validFormats = List.of("java", "cpp");
+        return validFormats.contains(format);
     }
 
     public static List<String[]> getUploadedFiles() throws Exception {

@@ -89,7 +89,7 @@ public class UI extends Application {
 
             if (filesToUpload != null && filesToUpload.length > 0) {
                 fileController.uploadFiles(List.of(filesToUpload));
-                showAlert("Success", "Files from the submissions directory uploaded temporarily.");
+                showAlert("Success", "Files from the submissions directory uploaded.");
             } else {
                 showAlert("Info", "No files found in the submissions directory to upload.");
             }
